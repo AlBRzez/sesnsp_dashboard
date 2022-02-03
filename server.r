@@ -45,7 +45,7 @@ to_spanish_dict <- spanish_months
 names(to_spanish_dict) <- english_months
 
 translate_date <- function(date, output_lang = "es"){
-        if(output_lang == "es") {
+        if (output_lang == "es") {
                 str_replace_all(tolower(date), to_spanish_dict)
         }
 }
@@ -103,7 +103,6 @@ server <- function(input, output, session) {
                                 ),
                                 multiple = F
                         )
-                        
                 })
         
         output$lista_modalidad <- 
@@ -123,20 +122,19 @@ server <- function(input, output, session) {
                                 ),
                                 multiple = F
                         )
-                        
                 })
         
         
         # Conditional date selector
         datos_fecha <- reactive({
                 if (input$tiempo == "mes") {
-
+                        
                         prov <- 
                                 secretariado %>%
                                 filter(year(fecha) == year(input$mes_sel) & 
                                                month(fecha) == month(input$mes_sel))# %>%
                 } else {
-
+                        
                         
                         prov <- 
                                 secretariado %>%
@@ -148,7 +146,6 @@ server <- function(input, output, session) {
                                 )
                         
                 }
-                
                 prov 
         })
         
@@ -167,18 +164,20 @@ server <- function(input, output, session) {
                         prov2 <-
                                 datos_fecha() %>%
                                 mutate(
-                                        delito_final = paste(tipo_de_delito, subtipo_de_delito)
+                                        delito_final = paste(tipo_de_delito, 
+                                                             subtipo_de_delito)
                                 )
                         delito_final_sel <- paste(input$tipo, input$subtipo)
                 } else if (input$desagregacion == "modalidad") {
                         prov2 <-
                                 datos_fecha() %>%
                                 mutate(
-                                        delito_final = paste(tipo_de_delito, subtipo_de_delito, modalidad)
+                                        delito_final = paste(tipo_de_delito, 
+                                                             subtipo_de_delito, 
+                                                             modalidad)
                                 )
                         delito_final_sel <- paste(input$tipo, input$subtipo, input$modalidad)
                 }
-                
                 
                 prov2 %>% 
                         filter(delito_final == delito_final_sel) %>% 
@@ -195,8 +194,6 @@ server <- function(input, output, session) {
                                 p100k = (total/poblacion) * 100000,
                                 color = ifelse(entidad == input$estado, "#34BA53", "gray75")
                         ) 
-                
-                
         })
         
         # Infoboxes ------------------
@@ -270,8 +267,8 @@ server <- function(input, output, session) {
                         annotate(geom = "text", 
                                  label = paste0("Prom. nac. ", 
                                                 comma(round(mean(tabla$total),2))),
-                                      x = 32, y = mean(tabla$total),
-                                  color = "#e74c3c", size = 4.5,
+                                 x = 32, y = mean(tabla$total),
+                                 color = "#e74c3c", size = 4.5,
                                  vjust = -1, hjust = 1, fontface = "bold",) +
                         scale_y_continuous(labels = comma_format(accuracy = 1)) +
                         scale_fill_identity() +
@@ -287,7 +284,7 @@ server <- function(input, output, session) {
         output$plotpob <- renderPlot({
                 
                 tabla <- datos() 
-
+                
                 
                 if (input$orden == "ranking") {
                         p <- ggplot(tabla, aes(x = reorder(entidad, -p100k), y = p100k,
@@ -316,7 +313,6 @@ server <- function(input, output, session) {
                         )
         })
         
-        
         # Crime table -----------------------------
         output$tabla_del <- renderReactable({
                 tab <-  
@@ -327,7 +323,7 @@ server <- function(input, output, session) {
                         rowid_to_column(var = "Rank. tot") %>% 
                         mutate(
                                 p100k = round(p100k, 2)
-
+                                
                         ) %>%
                         select(Entidad = entidad,
                                Total = total,
@@ -366,12 +362,11 @@ server <- function(input, output, session) {
                           defaultPageSize = 32, 
                           minRows = 32, 
                           searchable = TRUE)
-
         })
         
         # Ranking table
         output$tabla_rank <- renderReactable({
-
+                
                 tabla <- 
                         datos_fecha() %>% 
                         mutate(
@@ -383,8 +378,6 @@ server <- function(input, output, session) {
                                 prom_100 = mean(p100k)
                         ) %>% 
                         arrange(desc(total)) %>% 
-                        
-                        # group_by(modalidad) %>% 
                         group_split() %>% 
                         map(., rowid_to_column) %>% 
                         bind_rows() %>% 
@@ -403,13 +396,20 @@ server <- function(input, output, session) {
                         ) %>% 
                         select(bien_juridico_afectado, tipo_de_delito, subtipo_de_delito, 
                                modalidad, total, prom, `Rank. abs`, 
-                               p100k, prom_100, `Rank. 100k`)
-                
-                
+                               p100k, prom_100, `Rank. 100k`) %>% 
+                        adorn_totals() %>%
+                        mutate(
+                                across(c(tipo_de_delito, subtipo_de_delito, modalidad),
+                                       function(v) {ifelse(bien_juridico_afectado == "Total",
+                                                           "Total", v)}),
+                                across(c(`Rank. abs`, `Rank. 100k`),
+                                       function(v) {ifelse(bien_juridico_afectado == "Total",
+                                                           "-", v)})
+                        )
                 
                 reactable(tabla,
                           resizable = TRUE,
-                          height = "400px",
+                          height = "500px",
                           # filterable = TRUE,
                           striped = TRUE, 
                           highlight = TRUE,
@@ -424,7 +424,6 @@ server <- function(input, output, session) {
                                   align = "left",
                                   minWidth = 50,
                                   style = list(fontSize = 10),
-                                  #              fontWeight = "bold"),
                                   headerClass = "bar-sort-header"
                           ),
                           columns = list(
@@ -433,15 +432,12 @@ server <- function(input, output, session) {
                                   ),
                                   tipo_de_delito = colDef(
                                           name = "Tipo delito"#,
-                                          # aggregate = "count"
                                   ),
                                   subtipo_de_delito = colDef(
                                           name = "Subtipo delito"#,
-                                          # aggregate = "count"
                                   ),
                                   modalidad = colDef(
                                           name = "Modalidad"#,
-                                          # aggregate = "count"
                                   ),
                                   total = colDef(
                                           name = "Total",
@@ -460,7 +456,8 @@ server <- function(input, output, session) {
                                   prom = colDef(
                                           name = "Promedio nac.",
                                           aggregate = "sum",
-                                          format = colFormat(digits = 2)
+                                          format = colFormat(digits = 2,
+                                                             separators = TRUE)
                                   ),
                                   "Rank. abs",
                                   p100k = colDef(
@@ -482,9 +479,15 @@ server <- function(input, output, session) {
                                           aggregate = "sum",
                                           format = colFormat(digits = 2)
                                   ),
-                                  "Rank.100 k"))
+                                  "Rank.100 k"),
+                          rowStyle = function(index) {
+                                  if (tabla[index, "bien_juridico_afectado"] == "Total") {
+                                          list(fontWeight = "bold",
+                                               background = "#84DAF0")
+                                  }
+                          }
+                          )
                 
-          
+                
         })
 }
-

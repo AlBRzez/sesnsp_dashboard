@@ -219,7 +219,7 @@ ui <- dashboardPage(
         body,
         footer = dashboardFooter(
                 left = tags$a(
-                  href = "https://github.com/AlBRzez",      
+                  href = "https://github.com/AlBRzez/sesnsp_dashboard",      
                         "@AlBRzez",
                 ),
                 right = tags$a(
